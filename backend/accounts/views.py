@@ -657,3 +657,4 @@ def update_or_delete_review(request, pk):
     elif request.method == "DELETE":
         review.delete()
         return Response({"message": "Review deleted successfully"})
+    

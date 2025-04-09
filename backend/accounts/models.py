@@ -20,9 +20,21 @@ class Category(models.Model):
         }
 
 def product_image_upload_to(instance, filename):
-    # Получаем путь для сохранения изображения
-    product_id = instance.product.id  # id продукта
-    return os.path.join('product_images', str(product_id), filename)
+    # Если это Product — instance.id
+    if isinstance(instance, Product):
+        if instance.id:
+            return os.path.join('product_images', str(instance.id), filename)
+        else:
+            return os.path.join('product_images', 'temporary', filename)
+
+    # Если это ProductImage — instance.product.id
+    elif isinstance(instance, ProductImage):
+        if instance.product and instance.product.id:
+            return os.path.join('product_images', str(instance.product.id), filename)
+        else:
+            return os.path.join('product_images', 'temporary', filename)
+
+    return os.path.join('product_images', 'unknown', filename)
     
 class Product(models.Model):
     name = models.CharField(max_length=255)
@@ -34,7 +46,7 @@ class Product(models.Model):
     sold = models.PositiveIntegerField(default=0)
     original_price = models.DecimalField(max_digits=10, decimal_places=2)
     discount = models.PositiveIntegerField(default=0)
-    image = models.ImageField(upload_to=product_image_upload_to, null=True, blank=True)  # Используем ImageField
+    image = models.ImageField(upload_to="test", null=True, blank=True)  # Используем ImageField
     colors = models.JSONField()
     sizes = models.JSONField()
     description = models.TextField(default="test")
@@ -61,14 +73,20 @@ class Product(models.Model):
     #     return self.get_first_image()
 
     def save(self, *args, **kwargs):
-        if not self.image:
-            self.image = self.get_first_image()
+        # if not self.image:
+        #     self.image = self.get_first_image()
 
         if self.discount:  # Проверяем, есть ли скидка
             self.price = self.original_price * (Decimal(1) - Decimal(self.discount) / Decimal(100))
         else:
             self.price = self.original_price  # Если скидки нет, цена остается оригинальной
         super().save(*args, **kwargs)
+        if not self.image:
+            first_image = self.get_first_image()
+            if first_image:
+                self.image = first_image
+            # Save again if we updated the image
+                super().save(*args, **kwargs)
 
 
     @property

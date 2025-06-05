@@ -28,6 +28,7 @@ interface Customer {
 }
 
 export default function CustomersPage() {
+  
   const customers: Customer[] = [
     {
       name: "John Doe",
